@@ -3,10 +3,11 @@ library(rgdal)
 library(sf)
 library(ggplot2)
 
-str_name<-'cumulative_impact_2003.tif'
+str_name<-'inorganic.tif'
 imported_raster = raster(str_name)
 
 imported_raster
+summary(imported_raster)
 #class      : RasterLayer 
 #dimensions : 19305, 38610, 745366050  (nrow, ncol, ncell)
 #resolution : 934.4789, 934.4789  (x, y)
@@ -21,9 +22,36 @@ imported_raster
 #import direct human impact from halpern
 
 library(sf)
-brange <- sf::st_read("/Users/jacobdale/Downloads/birds_multistress/Bylot_non_breeding_range.shp")
+brange <- sf::st_read("/Users/jacobdale/Documents/birds_multistress/Bylot_non_breeding_range.shp")
 st_geometry_type(brange)
 st_bbox(brange)
 brange
 
 plot(st_geometry(brange[1:2,]))
+
+
+#####
+#extracting raster data with stars
+library(stars)
+library(sf)
+library(ggplot2)
+library(tidyverse)
+class(brange)
+class(inorganic)
+
+inorganic <- read_stars("/Users/jacobdale/raster_import/inorganic.tif/")
+brange <- sf::st_read("/Users/jacobdale/Documents/birds_multistress/Bylot_non_breeding_range.shp")
+
+brange_small = brange[1:1,]
+inorganic_crs <- st_crs(inorganic)
+brange_small_crs <- st_crs(brange_small)
+
+
+plot_both <- st_transform(inorganic, brange_small)
+#memory exhausted
+
+str(inorganic)
+str(brange)
+
+st_extract(inorganic, brange_small_crs)
+
