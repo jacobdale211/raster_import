@@ -31,27 +31,86 @@ plot(st_geometry(brange[1:2,]))
 
 
 #####
-#extracting raster data with stars
+#intersect 
 library(stars)
-library(sf)
-library(ggplot2)
-library(tidyverse)
+inorganic <- read_stars("/Users/jacobdale/raster_import/inorganic.tif/")
+
+
+str(brange)
 class(brange)
 class(inorganic)
 
-inorganic <- read_stars("/Users/jacobdale/raster_import/inorganic.tif/")
-brange <- sf::st_read("/Users/jacobdale/Documents/birds_multistress/Bylot_non_breeding_range.shp")
-
 brange_small = brange[1:1,]
-inorganic_crs <- st_crs(inorganic)
-brange_small_crs <- st_crs(brange_small)
+plot(brange_small)
+st_area(brange_small)
+#breakdown areas of range into grid (later on)
+
+brange_small <- st_transform(brange_small, crs = st_crs(inorganic))
+
+ext <- st_bbox(brange_small)
+inorganic_c <- st_crop(inorganic, ext)
+x=inorganic_c
+class(x)
+x <- st_as_stars(inorganic_c)
+class(x)
+x2 = log(x+1)
+image(x)
+image(x2)
+
+plot(st_geometry(brange_small), add = TRUE)
+
+#class(inorganic_c)
+#st_intersects(brange_small, x)
+
+pol <- st_as_sf(x, as_points = FALSE, merge = TRUE)
+int <- st_intersects(pol, brange_small)
+
+#st_buffer() - overlap btwn stopover and marine driver data to incorporate data that is not terrestrial
+
+grid <- st_make_grid(brange_small)
+plot(grid)
+plot(st_geometry(brange_small), add = TRUE)
+uid <- st_intersects(brange_small, grid) |> unlist() |> sort()
+uid
+grid <- grid[uid]
+
+#####
+#buffer
+st_boundary(brange_small)
+plot(brange_small)
+
+#just trying to see how st_buffer works
+plot(st_buffer(brange_small, dist = 1, joinStyle="ROUND"), reset = FALSE, main = "joinStyle: ROUND")
+
+brange_small_buffer <- st_buffer(brange_small, 10000)
+plot(brange_small_buffer)
+
+#####
+#extract
+x_raster <- as(x, "Raster")
+exact_extract(x_raster, brange_small_buffer, function(values, coverage_fraction)
+  sum(coverage_fraction))
+#1447527
+avg <- exact_extract(x_raster, grid, 'mean')
+#0.07897207
+avg
 
 
-plot_both <- st_transform(inorganic, brange_small)
-#memory exhausted
+grid <- st_sf(grid)
+grid$avg = avg
+plot(grid)
 
-str(inorganic)
-str(brange)
 
-st_extract(inorganic, brange_small_crs)
+
+
+
+#DECEMBER 1 ARTICNET CONFERENCE IN TORONTO
+#QUEBEC OCEAN CONFERENCE - SOMETIME IN NOVEMBER
+
+
+
+
+
+
+
 
